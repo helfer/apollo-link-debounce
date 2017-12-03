@@ -1,5 +1,7 @@
 # apollo-link-debounce
 
+[![npm version](https://badge.fury.io/js/apollo-link-debounce.svg)](https://badge.fury.io/js/apollo-link-debounce)
+
 An Apollo Link that debounces requests made within a certain interval of each other.
 
 ### Motivation
