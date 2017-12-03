@@ -1,6 +1,6 @@
 {
   "name": "apollo-link-debounce",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "An Apollo Link to debounce requests",
   "dependencies": {
     "apollo-link": "^0.7.0"
