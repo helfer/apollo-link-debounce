@@ -19,6 +19,10 @@
   },
   "main": "build/dist/index.js",
   "module": "build/dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "helfer/apollo-link-debounce"
+  },
   "jsnext:main": "build/dist/index.js",
   "typings": "build/dist/index.d.ts",
   "scripts": {
