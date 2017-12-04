@@ -1,6 +1,8 @@
 # apollo-link-debounce
 
 [![npm version](https://badge.fury.io/js/apollo-link-debounce.svg)](https://badge.fury.io/js/apollo-link-debounce)
+[![Build Status](https://travis-ci.org/helfer/apollo-link-debounce.svg?branch=master)](https://travis-ci.org/helfer/apollo-link-debounce)
+[![codecov](https://codecov.io/gh/helfer/apollo-link-debounce/branch/master/graph/badge.svg)](https://codecov.io/gh/helfer/apollo-link-debounce)
 
 An Apollo Link that debounces requests made within a certain interval of each other.
 
