@@ -16,5 +16,9 @@
     "exclude": [
         "node_modules",
         "**/*.test.ts"
+    ],
+    "types": [
+      "jest"
     ]
+
 }
