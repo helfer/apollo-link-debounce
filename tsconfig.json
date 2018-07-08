@@ -11,14 +11,10 @@
         "sourceMap": true
     },
     "include": [
-        "src/**/*"
+        "src/index.ts"
     ],
     "exclude": [
         "node_modules",
         "**/*.test.ts"
-    ],
-    "types": [
-      "jest"
     ]
-
 }
