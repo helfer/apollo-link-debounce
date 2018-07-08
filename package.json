@@ -3,7 +3,7 @@
   "version": "1.0.3",
   "description": "An Apollo Link to debounce requests",
   "dependencies": {
-    "apollo-link": "^0.7.0"
+    "apollo-link": "^1.2.2"
   },
   "devDependencies": {
     "@types/graphql": "^0.11.7",
