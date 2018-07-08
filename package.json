@@ -8,7 +8,7 @@
   "devDependencies": {
     "@types/graphql": "^0.13.0",
     "@types/jest": "^23.1.4",
-    "@types/node": "^8.0.26",
+    "@types/node": "^10.5.2",
     "codecov": "^3.0.3",
     "graphql": "^0.13.2",
     "graphql-tag": "^2.9.2",
