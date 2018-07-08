@@ -6,14 +6,14 @@
     "apollo-link": "^1.2.2"
   },
   "devDependencies": {
-    "@types/graphql": "^0.11.7",
-    "@types/jest": "^20.0.8",
+    "@types/graphql": "^0.13.0",
+    "@types/jest": "^23.1.4",
     "@types/node": "^8.0.26",
-    "codecov": "^2.3.0",
-    "graphql": "^0.11.7",
-    "graphql-tag": "^2.4.2",
+    "codecov": "^3.0.3",
+    "graphql": "^0.13.2",
+    "graphql-tag": "^2.9.2",
     "nyc": "^11.2.1",
-    "react-scripts-ts": "^2.6.0",
+    "react-scripts-ts": "^2.16.0",
     "tslint": "^5.8.0",
     "typescript": "^2.6.2"
   },
