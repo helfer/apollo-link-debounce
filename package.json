@@ -3,7 +3,8 @@
   "version": "1.0.3",
   "description": "An Apollo Link to debounce requests",
   "dependencies": {
-    "apollo-link": "^1.2.2"
+    "apollo-link": "^1.2.2",
+    "zen-observable-ts": "^0.8.9"
   },
   "devDependencies": {
     "@types/graphql": "^0.13.0",
@@ -15,8 +16,7 @@
     "nyc": "^11.2.1",
     "react-scripts-ts": "^2.16.0",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.2",
-    "zen-observable-ts": "^0.8.9"
+    "typescript": "^2.6.2"
   },
   "main": "build/dist/index.js",
   "module": "build/dist/index.js",
