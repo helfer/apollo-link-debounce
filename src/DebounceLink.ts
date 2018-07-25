@@ -1,21 +1,21 @@
 import {
     ApolloLink,
-    Observable,
     FetchResult,
     Operation,
     NextLink,
 } from 'apollo-link';
+import { Observable, Observer } from 'zen-observable-ts';
 
 interface OperationQueueEntry {
     operation: Operation;
     forward: NextLink;
-    observer: any;
+    observer: Observer<FetchResult>;
     subscription?: { unsubscribe: () => void };
 }
 
 interface RunningSubscriptions {
     [groupId: string]: {
-        observers: any;
+        observers: Observer<FetchResult>[];
         subscription: { unsubscribe: () => void };
     };
 }
@@ -24,7 +24,7 @@ interface DebounceMetadata {
         // tslint:disable-next-line no-any
         timeout: any;
         runningSubscriptions: RunningSubscriptions;
-        queuedObservers: any;
+        queuedObservers: Observer<FetchResult>[];
         currentGroupId: number;
         lastRequest?: { operation: Operation, forward: NextLink };
 }
@@ -135,7 +135,7 @@ export default class DebounceLink extends ApolloLink {
         dbi.currentGroupId++;
     }
 
-    private unsubscribe = (debounceKey: string, debounceGroupId: number, observer: any) => {
+    private unsubscribe = (debounceKey: string, debounceGroupId: number, observer: Observer<FetchResult>) => {
         // NOTE(helfer): This breaks if the same observer is
         // used for multiple subscriptions to the same observable.
         // To be fair, I think all Apollo Links will currently execute the request
