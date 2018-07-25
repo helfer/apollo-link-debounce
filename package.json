@@ -15,7 +15,8 @@
     "nyc": "^11.2.1",
     "react-scripts-ts": "^2.16.0",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.2"
+    "typescript": "^2.6.2",
+    "zen-observable-ts": "^0.8.9"
   },
   "main": "build/dist/index.js",
   "module": "build/dist/index.js",
