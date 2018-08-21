@@ -45,11 +45,12 @@ describe('DebounceLink', () => {
         ];
     }
 
-    function makeSimpleOp(sequence: ObservableEvent[], debounceKey: string): GraphQLRequest {
+    function makeSimpleOp(sequence: ObservableEvent[], debounceKey: string, debounceTimeout: number): GraphQLRequest {
         return {
             query: gql`{ hello }`,
             context: {
                 debounceKey,
+                debounceTimeout,
                 testSequence: sequence,
             },
         };
@@ -182,6 +183,63 @@ describe('DebounceLink', () => {
         op3.operationName = 'op3';
         const s3 = execute(link, op3).subscribe(subscriber);
         jest.runTimersToTime(DEBOUNCE_TIMEOUT + 1);
+        // check that all queries returned the sequence of the last query.
+        const expectedSequence = [
+            toResultValue(op3sequence[0]),
+            toResultValue(op3sequence[0]),
+            toResultValue(op3sequence[0]),
+            toResultValue(op3sequence[1]),
+            toResultValue(op3sequence[1]),
+            toResultValue(op3sequence[1]),
+        ];
+
+        expect(testLink.operations.length).toEqual(1);
+        expect(testLink.operations[0].operationName).toBe(op3.operationName);
+        expect(observedSequence.length).toEqual(6);
+        expect(observedSequence).toEqual(expectedSequence);
+        s1.unsubscribe();
+        s2.unsubscribe();
+        s3.unsubscribe();
+    });
+    it('debounces multiple queries within the custom debounce interval provided in context', () => {
+        const observedSequence: ObservableEvent[] = [];
+        const subscriber = getTestSubscriber(observedSequence);
+        const customDebounceTimeout = DEBOUNCE_TIMEOUT / 4;
+
+        const op0 = makeSimpleOp(
+            testSequence,
+            'key1',
+            customDebounceTimeout 
+        );
+
+        const s1 = execute(link, op0).subscribe(subscriber);
+        jest.runTimersToTime(customDebounceTimeout - 1);
+        // check that query did not execute.
+        expect(testLink.operations.length).toBe(0);
+        expect(observedSequence.length).toBe(0);
+
+        // make another query, different params.
+        const op2 = makeSimpleOp(
+            makeSimpleSequence(makeSimpleResponse('op2')),
+            'key1',
+            customDebounceTimeout 
+        );
+        const s2 = execute(link, op2).subscribe(subscriber);
+        jest.runTimersToTime(customDebounceTimeout - 1);
+        // check that query did not execute
+        expect(testLink.operations.length).toBe(0);
+        expect(observedSequence.length).toBe(0);
+
+        // make another query, different params
+        const op3sequence = makeSimpleSequence(makeSimpleResponse('op3'));
+        const op3 = makeSimpleOp(
+            op3sequence,
+            'key1',
+            customDebounceTimeout 
+        );
+        op3.operationName = 'op3';
+        const s3 = execute(link, op3).subscribe(subscriber);
+        jest.runTimersToTime(customDebounceTimeout + 1);
         // check that all queries returned the sequence of the last query.
         const expectedSequence = [
             toResultValue(op3sequence[0]),
