@@ -39,9 +39,9 @@ import gql from 'graphql-tag';
 
 import DebounceLink from 'apollo-link-debounce';
 
-const DEBOUNCE_TIMEOUT = 100;
+const DEFAULT_DEBOUNCE_TIMEOUT = 100;
 this.link = ApolloLink.from([
-    new DebounceLink(DEBOUNCE_TIMEOUT),
+    new DebounceLink(DEFAULT_DEBOUNCE_TIMEOUT),
     new HttpLink({ uri: URI_TO_YOUR_GRAPHQL_SERVER }),
 ]);
 
@@ -65,8 +65,20 @@ const op2 = {
     },
 };
 
-// No debounce key, so this request does not get debounced
+// Different debounceKeys can have different debounceTimeouts
 const op3 = {
+    query: gql`query autoComplete($val: String) { autoComplete(value: $val) { value } }`,
+    variables: { val: 'apollo-link-de' }, // Server returns "apollo-link-debounce"
+    context: {
+        // DEFAULT_DEBOUNCE_TIMEOUT is overridden by setting debounceTimeout
+        debounceKey: '2',
+        debounceTimeout: 10,
+    },
+};
+
+
+// No debounce key, so this request does not get debounced
+const op4 = {
     query: gql`{ hello }`, // Server returns "World!"
 };
 
@@ -79,6 +91,10 @@ link.execute(op2).subscribe({
     complete() { console.log('B complete!'); },
 });
 link.execute(op3).subscribe({
+    next(response) { console.log('C', response.data.autoComplete.value); },
+    complete() { console.log('C complete!'); },
+});
+link.execute(op4).subscribe({
     next(response) { console.log('Hello', response.data.hello); },
     complete() { console.log('Hello complete!'); },
 });
@@ -87,6 +103,9 @@ link.execute(op3).subscribe({
 // -- no delay --
 // Hello World!
 // Hello complete!
+// -- 10 ms delay --
+// C apollo-link-debounce
+// C complete!
 // -- 100 ms delay --
 // A 100 (after 100ms)
 // A complete!

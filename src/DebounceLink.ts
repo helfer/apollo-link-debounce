@@ -30,6 +30,11 @@ interface DebounceMetadata {
         lastRequest?: { operation: Operation, forward: NextLink };
 }
 
+interface ContextOptions {
+    debounceKey: string;
+    debounceTimeout: number;
+}
+
 export default class DebounceLink extends ApolloLink {
     // TODO(helfer): nodejs and browser typings seem incompatible here. setTimeout returns NodeJS.Timer,
     // but clearTimeout wants a number. If I use window.setTimeout, I can't test as easily any more.
@@ -37,20 +42,21 @@ export default class DebounceLink extends ApolloLink {
     private debounceInfo: {
         [debounceKey: string]: DebounceMetadata,
     } = {};
-    private delay: number;
+    private defaultDelay: number;
 
-    constructor(delay: number) {
+    constructor(defaultDelay: number) {
         super();
-        this.delay = delay;
+        this.defaultDelay = defaultDelay;
     }
 
     public request(operation: Operation, forward: NextLink ) {
-        const debounceKey = operation.getContext().debounceKey;
+        const { debounceKey, debounceTimeout } = operation.getContext();
+
         if (!debounceKey) {
             return forward(operation);
         }
         return new Observable(observer => {
-            const debounceGroupId = this.enqueueRequest(debounceKey, { operation, forward, observer });
+            const debounceGroupId = this.enqueueRequest({ debounceKey, debounceTimeout }, { operation, forward, observer });
             return () => {
                 this.unsubscribe(debounceKey, debounceGroupId, observer);
             };
@@ -73,7 +79,7 @@ export default class DebounceLink extends ApolloLink {
     }
 
     // Add a request to the debounce queue
-    private enqueueRequest(debounceKey: string, { operation, forward, observer }: OperationQueueEntry) {
+    private enqueueRequest({ debounceKey, debounceTimeout }: ContextOptions, { operation, forward, observer }: OperationQueueEntry) {
         const dbi = this.debounceInfo[debounceKey] || this.setupDebounceInfo(debounceKey);
 
         dbi.queuedObservers.push(observer);
@@ -82,7 +88,7 @@ export default class DebounceLink extends ApolloLink {
             clearTimeout(dbi.timeout);
         }
 
-        dbi.timeout = setTimeout(() => this.flush(debounceKey), this.delay);
+        dbi.timeout = setTimeout(() => this.flush(debounceKey), debounceTimeout || this.defaultDelay);
         return dbi.currentGroupId;
     }
 
