@@ -209,7 +209,7 @@ describe('DebounceLink', () => {
         const op0 = makeSimpleOp(
             testSequence,
             'key1',
-            customDebounceTimeout 
+            customDebounceTimeout,
         );
 
         const s1 = execute(link, op0).subscribe(subscriber);
@@ -222,7 +222,7 @@ describe('DebounceLink', () => {
         const op2 = makeSimpleOp(
             makeSimpleSequence(makeSimpleResponse('op2')),
             'key1',
-            customDebounceTimeout 
+            customDebounceTimeout,
         );
         const s2 = execute(link, op2).subscribe(subscriber);
         jest.runTimersToTime(customDebounceTimeout - 1);
@@ -235,7 +235,7 @@ describe('DebounceLink', () => {
         const op3 = makeSimpleOp(
             op3sequence,
             'key1',
-            customDebounceTimeout 
+            customDebounceTimeout,
         );
         op3.operationName = 'op3';
         const s3 = execute(link, op3).subscribe(subscriber);
