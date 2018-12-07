@@ -1,11 +1,10 @@
 import {
     ApolloLink,
-    Observable,
-    Observer,
     FetchResult,
     Operation,
     NextLink,
 } from 'apollo-link';
+import { Observable, Observer } from 'zen-observable-ts';
 
 interface OperationQueueEntry {
     operation: Operation;
@@ -147,6 +146,8 @@ export default class DebounceLink extends ApolloLink {
         // TODO(helfer): Why do subscribers seem to unsubscribe when the subscription completes?
         // Isn't that unnecessary?
 
+        const isNotObserver =  (obs: any) => obs !== observer;
+
         const dbi = this.debounceInfo[debounceKey];
 
         if (!dbi) {
@@ -154,9 +155,10 @@ export default class DebounceLink extends ApolloLink {
             return;
         }
 
+
         // if this observer is in the queue that hasn't been executed yet, remove it
         if (debounceGroupId === dbi.currentGroupId) {
-            dbi.queuedObservers = dbi.queuedObservers.filter( obs => obs !== observer);
+            dbi.queuedObservers = dbi.queuedObservers.filter(isNotObserver);
             if (dbi.queuedObservers.length === 0) {
                 this.cleanup(debounceKey, debounceGroupId);
             }
@@ -166,7 +168,7 @@ export default class DebounceLink extends ApolloLink {
         // if this observer's observable has already been forwarded, cancel it
         const observerGroup = dbi.runningSubscriptions[debounceGroupId];
         if (observerGroup) {
-            observerGroup.observers = observerGroup.observers.filter(obs => obs !== observer);
+            observerGroup.observers = observerGroup.observers.filter(isNotObserver);
 
             // if this was the last observer listening to the forwarded value, unsubscribe
             // from the subscription entirely and do cleanup.
