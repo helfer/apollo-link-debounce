@@ -43,7 +43,7 @@ export default class DebounceLink extends ApolloLink {
         this.delay = delay;
     }
 
-    public request(operation: Operation, forward: NextLink ) {
+    public request(operation: Operation, forward: NextLink) {
         const debounceKey = operation.getContext().debounceKey;
         if (!debounceKey) {
             return forward(operation);
@@ -65,7 +65,7 @@ export default class DebounceLink extends ApolloLink {
             // NOTE(helfer): In theory we could run out of numbers for groupId, but it's not a realistic use-case.
             // If the debouncer fired once every ms, it would take about 300,000 years to run out of safe integers.
             currentGroupId: 0,
-            timeout: null,
+            timeout: undefined,
             lastRequest: undefined,
         };
         return this.debounceInfo[debounceKey];
