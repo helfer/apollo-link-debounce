@@ -7,6 +7,9 @@ import {
 import {
     ExecutionResult,
 } from 'graphql';
+import {
+    ExecutionResultDataDefault,
+} from 'graphql/execution/execute';
 
 export interface ObservableValue {
     value?: ExecutionResult | Error;
