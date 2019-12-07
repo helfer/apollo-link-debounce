@@ -1,10 +1,6 @@
-import {
-    ApolloLink,
-    FetchResult,
-    Operation,
-    NextLink,
-} from 'apollo-link';
+import { ApolloLink, FetchResult, Operation, NextLink, GraphQLRequest, createOperation } from 'apollo-link';
 import { Observable, Observer } from 'zen-observable-ts';
+const merge = require('lodash.merge');
 
 interface OperationQueueEntry {
     operation: Operation;
@@ -21,17 +17,29 @@ interface RunningSubscriptions {
 }
 
 interface DebounceMetadata {
-        // tslint:disable-next-line no-any
-        timeout: any;
-        runningSubscriptions: RunningSubscriptions;
-        queuedObservers: Observer<FetchResult>[];
-        currentGroupId: number;
-        lastRequest?: { operation: Operation, forward: NextLink };
+    // tslint:disable-next-line no-any
+    timeout: any;
+    runningSubscriptions: RunningSubscriptions;
+    queuedObservers: Observer<FetchResult>[];
+    currentGroupId: number;
+    lastRequest?: { operation: Operation; forward: NextLink };
+    queuedVariables?: Record<string, any>[];
 }
 
 interface ContextOptions {
     debounceKey: string;
     debounceTimeout: number;
+    debounceOpts: DebounceOpts;
+}
+
+export interface DebounceOpts {
+    mergeVariables: Boolean;
+}
+
+const defaultOpts = { mergeVariables: false };
+
+function mutateOperation(ctx: Record<string, any>, base: Operation): Operation {
+    return createOperation(ctx, base);
 }
 
 export default class DebounceLink extends ApolloLink {
@@ -49,13 +57,20 @@ export default class DebounceLink extends ApolloLink {
     }
 
     public request(operation: Operation, forward: NextLink) {
-        const { debounceKey, debounceTimeout } = operation.getContext();
+        const {
+            debounceKey,
+            debounceTimeout,
+            debounceOpts
+        } = operation.getContext();
 
         if (!debounceKey) {
             return forward(operation);
         }
         return new Observable(observer => {
-            const debounceGroupId = this.enqueueRequest({ debounceKey, debounceTimeout }, { operation, forward, observer });
+            const debounceGroupId = this.enqueueRequest(
+                { debounceKey, debounceTimeout, debounceOpts },
+                { operation, forward, observer }
+            );
             return () => {
                 this.unsubscribe(debounceKey, debounceGroupId, observer);
             };
@@ -68,26 +83,38 @@ export default class DebounceLink extends ApolloLink {
         this.debounceInfo[debounceKey] = {
             runningSubscriptions: {},
             queuedObservers: [],
+            queuedVariables: [],
             // NOTE(helfer): In theory we could run out of numbers for groupId, but it's not a realistic use-case.
             // If the debouncer fired once every ms, it would take about 300,000 years to run out of safe integers.
             currentGroupId: 0,
             timeout: undefined,
-            lastRequest: undefined,
+            lastRequest: undefined
         };
         return this.debounceInfo[debounceKey];
     }
 
     // Add a request to the debounce queue
-    private enqueueRequest({ debounceKey, debounceTimeout }: ContextOptions, { operation, forward, observer }: OperationQueueEntry) {
-        const dbi = this.debounceInfo[debounceKey] || this.setupDebounceInfo(debounceKey);
+    private enqueueRequest(
+        { debounceKey, debounceTimeout, debounceOpts }: ContextOptions,
+        { operation, forward, observer }: OperationQueueEntry
+    ) {
+        const mergedOpts = { ...defaultOpts, ...debounceOpts };
+        const dbi =
+            this.debounceInfo[debounceKey] || this.setupDebounceInfo(debounceKey);
 
         dbi.queuedObservers.push(observer);
         dbi.lastRequest = { operation, forward };
+        if (mergedOpts.mergeVariables) {
+            dbi.queuedVariables.push(operation.variables);
+        }
         if (dbi.timeout) {
             clearTimeout(dbi.timeout);
         }
 
-        dbi.timeout = setTimeout(() => this.flush(debounceKey), debounceTimeout || this.defaultDelay);
+        dbi.timeout = setTimeout(
+            () => this.flush(debounceKey),
+            debounceTimeout || this.defaultDelay
+        );
         return dbi.currentGroupId;
     }
 
@@ -103,45 +130,62 @@ export default class DebounceLink extends ApolloLink {
             clearTimeout(dbi.timeout);
         }
 
-        const noRunningSubscriptions = Object.keys(dbi.runningSubscriptions).length === 0;
+        const noRunningSubscriptions =
+            Object.keys(dbi.runningSubscriptions).length === 0;
         const noQueuedObservers = dbi.queuedObservers.length === 0;
         if (noRunningSubscriptions && noQueuedObservers) {
             delete this.debounceInfo[debounceKey];
         }
-    }
+    };
 
     // flush the currently queued requests
     private flush(debounceKey: string) {
         const dbi = this.debounceInfo[debounceKey];
-        if (dbi.queuedObservers.length === 0 || typeof dbi.lastRequest === 'undefined') {
+        if (
+            dbi.queuedObservers.length === 0 ||
+            typeof dbi.lastRequest === 'undefined'
+        ) {
             // The first should never happen, the second is a type guard
             return;
         }
         const { operation, forward } = dbi.lastRequest;
+        const mergedVariables = [...dbi.queuedVariables, operation.variables].reduce(
+            merge,
+            {}
+        ) as Operation;
+        const mergedOperation = mutateOperation(operation.getContext(), { ...operation, variables: mergedVariables });
         const currentObservers = [...dbi.queuedObservers];
         const groupId = dbi.currentGroupId;
-        const sub = forward(operation).subscribe({
+        const sub = forward(mergedOperation).subscribe({
             next: (v: FetchResult) => {
                 currentObservers.forEach(observer => observer.next && observer.next(v));
             },
             error: (e: Error) => {
-                currentObservers.forEach(observer => observer.error && observer.error(e));
+                currentObservers.forEach(
+                    observer => observer.error && observer.error(e)
+                );
                 this.cleanup(debounceKey, groupId);
             },
             complete: () => {
-                currentObservers.forEach(observer => observer.complete && observer.complete());
+                currentObservers.forEach(
+                    observer => observer.complete && observer.complete()
+                );
                 this.cleanup(debounceKey, groupId);
-            },
+            }
         });
         dbi.runningSubscriptions[dbi.currentGroupId] = {
             subscription: sub,
-            observers: currentObservers,
+            observers: currentObservers
         };
         dbi.queuedObservers = [];
         dbi.currentGroupId++;
     }
 
-    private unsubscribe = (debounceKey: string, debounceGroupId: number, observer: Observer<FetchResult>) => {
+    private unsubscribe = (
+        debounceKey: string,
+        debounceGroupId: number,
+        observer: Observer<FetchResult>
+    ) => {
         // NOTE(helfer): This breaks if the same observer is
         // used for multiple subscriptions to the same observable.
         // To be fair, I think all Apollo Links will currently execute the request
@@ -152,7 +196,7 @@ export default class DebounceLink extends ApolloLink {
         // TODO(helfer): Why do subscribers seem to unsubscribe when the subscription completes?
         // Isn't that unnecessary?
 
-        const isNotObserver =  (obs: any) => obs !== observer;
+        const isNotObserver = (obs: any) => obs !== observer;
 
         const dbi = this.debounceInfo[debounceKey];
 
@@ -160,7 +204,6 @@ export default class DebounceLink extends ApolloLink {
             // We already cleaned up, no need to do anything any more.
             return;
         }
-
 
         // if this observer is in the queue that hasn't been executed yet, remove it
         if (debounceGroupId === dbi.currentGroupId) {
@@ -183,5 +226,5 @@ export default class DebounceLink extends ApolloLink {
                 this.cleanup(debounceKey, debounceGroupId);
             }
         }
-    }
+    };
 }
