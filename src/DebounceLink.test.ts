@@ -1,4 +1,4 @@
-import DebounceLink from './DebounceLink';
+import DebounceLink, { DebounceOpts } from './DebounceLink';
 import {
     ObservableEvent,
     TestSequenceLink,
@@ -15,6 +15,7 @@ import {
 } from 'graphql';
 
 import gql from 'graphql-tag';
+const merge = require('lodash.merge');
 
 describe('DebounceLink', () => {
     let link: ApolloLink;
@@ -53,6 +54,18 @@ describe('DebounceLink', () => {
                 debounceTimeout,
                 testSequence: sequence,
             },
+        };
+    }
+
+    function makeVariableOp(debounceKey: string, variables: Record<string, any>, debounceOpts: DebounceOpts = { mergeVariables: true }): GraphQLRequest {
+        return {
+            query: gql`{hello}`,
+            variables,
+            context: {
+                debounceKey,
+                debounceOpts,
+                testSequence: makeSimpleSequence(testResponse)
+            }
         };
     }
 
@@ -412,4 +425,57 @@ describe('DebounceLink', () => {
 
         s1.unsubscribe();
     });
+    describe('with variables', () => {
+        let variables;
+        let mergeVariables;
+
+        const createAndQueueOps = (contextKey = 'key1') => {
+            const variableOps = variables.map(v => makeVariableOp(contextKey, v, { mergeVariables }));
+            const subscriber = getTestSubscriber([]);
+            variableOps.forEach(vo => execute(link, vo).subscribe(subscriber));
+        };
+
+        const subject = () => {
+            createAndQueueOps();
+            jest.runTimersToTime(DEBOUNCE_TIMEOUT + 1);
+        };
+
+        beforeEach(() => {
+            variables = [{ a: 5, b: { c: 6 } }, { b: { d: 4 } }, { e: 3 }];
+            mergeVariables = true;
+        });
+        it('merges the operation variables key with the mergeVariables opt set', () => {
+            subject();
+
+            expect(testLink.operations.length).toEqual(1);
+            expect(testLink.operations[0].variables).toEqual(variables.reduce(merge, {}));
+        });
+        it('does not merge the operation variables when the mergeVariables opt is false', () => {
+            mergeVariables = false;
+            subject();
+
+            expect(testLink.operations.length).toEqual(1);
+            expect(testLink.operations[0].variables).toEqual(variables.slice(-1)[0]);
+        });
+        it('merges only variables within an interval', () => {
+            subject();
+
+            variables = [{ d: 5 }];
+            subject();
+
+            expect(testLink.operations.length).toEqual(2);
+            expect(testLink.operations[1].variables).toEqual(variables[0]);
+        });
+        it('merges variables with separate debounce keys separately', () => {
+            createAndQueueOps('key2');
+            const mergedVariables = variables.reduce(merge, {});
+            variables = [{ d: 5 }];
+            subject();
+
+            expect(testLink.operations.length).toEqual(2);
+            expect(testLink.operations[0].variables).toEqual(mergedVariables);
+            expect(testLink.operations[1].variables).toEqual(variables.reduce(merge, {}));
+        });
+    });
 });
+})
