@@ -1,10 +1,11 @@
 import {
     ApolloLink,
     FetchResult,
+    Observable,
+    Observer,
     Operation,
     NextLink,
-} from 'apollo-link';
-import { Observable, Observer } from 'zen-observable-ts';
+} from '@apollo/client';
 
 interface OperationQueueEntry {
     operation: Operation;
@@ -54,7 +55,7 @@ export default class DebounceLink extends ApolloLink {
         if (!debounceKey) {
             return forward(operation);
         }
-        return new Observable(observer => {
+        return new Observable<FetchResult>(observer => {
             const debounceGroupId = this.enqueueRequest({ debounceKey, debounceTimeout }, { operation, forward, observer });
             return () => {
                 this.unsubscribe(debounceKey, debounceGroupId, observer);

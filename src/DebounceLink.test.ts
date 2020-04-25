@@ -9,7 +9,7 @@ import {
     execute,
     GraphQLRequest,
     ApolloLink,
-} from 'apollo-link';
+} from '@apollo/client';
 import {
     ExecutionResult,
 } from 'graphql';
