@@ -2,20 +2,17 @@
   "name": "apollo-link-debounce",
   "version": "2.1.0",
   "description": "An Apollo Link to debounce requests",
-  "dependencies": {
-    "@types/react": "^16.9.34"
-  },
   "peerDependencies": {
-    "@apollo/client": "*"
+    "@apollo/client": "^3.0.0"
   },
   "devDependencies": {
-    "@apollo/client": "^3.0.0-beta.44",
+    "@apollo/client": "^3.0.0",
     "@types/graphql": "^0.13.0",
     "@types/jest": "^23.1.4",
     "@types/node": "^13.13.2",
+    "@types/react": "^16.9.34",
     "codecov": "^3.0.3",
     "graphql": "^0.13.2",
-    "graphql-tag": "^2.9.2",
     "nyc": "^11.2.1",
     "react-scripts-ts": "^2.16.0",
     "tslint": "^5.8.0",
@@ -41,6 +38,7 @@
     "graphql",
     "apollo",
     "apollo-link",
+    "@apollo/client",
     "offline",
     "queue"
   ],
