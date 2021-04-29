@@ -1,10 +1,11 @@
 {
     "compilerOptions": {
         "declaration": true,
+	"esModuleInterop": true,
         "module": "commonjs",
         "moduleResolution": "node",
         "noImplicitAny": true,
-        "lib": ["esnext"],
+        "lib": ["dom", "esnext"],
         "removeComments": true,
         "preserveConstEnums": true,
         "outDir": "build/dist",

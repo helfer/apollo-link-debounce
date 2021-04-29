@@ -32,10 +32,8 @@ yarn add apollo-link-debounce
 ### Usage
 
 ```js
-import { ApolloLink } from 'apollo-link';
-import { HttpLink } from 'apollo-link-http';
-import { RetryLink } from 'apollo-link-retry';
-import gql from 'graphql-tag';
+import { gql, ApolloLink, HttpLink } from '@apollo/client';
+import { RetryLink } from '@apollo/client/link/retry';
 
 import DebounceLink from 'apollo-link-debounce';
 

@@ -6,15 +6,14 @@ import {
     assertObservableSequence,
 } from './TestUtils';
 import {
+    gql,
     execute,
     GraphQLRequest,
     ApolloLink,
-} from 'apollo-link';
+} from '@apollo/client';
 import {
     ExecutionResult,
 } from 'graphql';
-
-import gql from 'graphql-tag';
 
 describe('DebounceLink', () => {
     let link: ApolloLink;

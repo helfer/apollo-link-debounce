@@ -2,21 +2,22 @@
   "name": "apollo-link-debounce",
   "version": "2.1.0",
   "description": "An Apollo Link to debounce requests",
-  "dependencies": {
-    "apollo-link": "^1.2.2",
-    "zen-observable-ts": "^0.8.9"
+  "peerDependencies": {
+    "@apollo/client": "^3.0.0"
   },
   "devDependencies": {
+    "@apollo/client": "^3.0.0",
     "@types/graphql": "^0.13.0",
     "@types/jest": "^23.1.4",
-    "@types/node": "10.1.2",
+    "@types/node": "^13.13.2",
+    "@types/react": "^16.9.34",
     "codecov": "^3.0.3",
-    "graphql": "^0.13.2",
-    "graphql-tag": "^2.9.2",
+    "graphql": "^15.0.0",
     "nyc": "^11.2.1",
+    "react": "^17.0.0",
     "react-scripts-ts": "^2.16.0",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.2"
+    "typescript": "^3.8.3"
   },
   "main": "build/dist/index.js",
   "module": "build/dist/index.js",
@@ -31,12 +32,14 @@
     "lint": "tslint src/*.ts* src/**/*.ts*",
     "test": "react-scripts-ts test --coverage --collectCoverageFrom=src/**/*.ts* --collectCoverageFrom=!src/index.ts --collectCoverageFrom=!src/TestUtils.ts && yarn run lint",
     "testonly": "react-scripts-ts test --env=jsdom",
+    "prepack": "yarn run build",
     "coverage": "codecov -f coverage/*.json"
   },
   "keywords": [
     "graphql",
     "apollo",
     "apollo-link",
+    "@apollo/client",
     "offline",
     "queue"
   ],
