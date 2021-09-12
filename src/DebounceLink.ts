@@ -5,7 +5,7 @@ import {
     Observer,
     Operation,
     NextLink,
-} from '@apollo/client';
+} from '@apollo/client/core';
 
 interface OperationQueueEntry {
     operation: Operation;
