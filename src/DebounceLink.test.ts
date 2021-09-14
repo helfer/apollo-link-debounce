@@ -1,4 +1,4 @@
-import DebounceLink from './DebounceLink';
+import DebounceLink, { DebounceOpts } from './DebounceLink';
 import {
     ObservableEvent,
     TestSequenceLink,
@@ -10,10 +10,13 @@ import {
     execute,
     GraphQLRequest,
     ApolloLink,
-} from '@apollo/client';
+} from '@apollo/client/core';
 import {
     ExecutionResult,
 } from 'graphql';
+
+const merge = require('lodash.merge');
+
 
 describe('DebounceLink', () => {
     let link: ApolloLink;
@@ -55,6 +58,18 @@ describe('DebounceLink', () => {
         };
     }
 
+    function makeVariableOp(debounceKey: string, variables: Record<string, any>, debounceOpts: DebounceOpts = { mergeVariables: true }): GraphQLRequest {
+        return {
+            query: gql`{hello}`,
+            variables,
+            context: {
+                debounceKey,
+                debounceOpts,
+                testSequence: makeSimpleSequence(testResponse)
+            }
+        };
+    }
+
     function getTestSubscriber(observedSequence: ObservableEvent[]) {
         return {
             next(value: ExecutionResult) {
@@ -80,6 +95,7 @@ describe('DebounceLink', () => {
     const op = makeSimpleOp(
         testSequence,
         'key1',
+        DEBOUNCE_TIMEOUT
     );
 
     const testError = new Error('Hello darkness my old friend');
@@ -100,7 +116,7 @@ describe('DebounceLink', () => {
     });
 
     it('forwards the operation', () => {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             execute(link, op).subscribe({
                 next: (data) => undefined,
                 error: (error) => reject(error),
@@ -120,7 +136,7 @@ describe('DebounceLink', () => {
                 testSequence: makeSimpleSequence(testResponse),
             },
         };
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             execute(link, opWithoutKey).subscribe({
                 next: (data) => undefined,
                 error: (error) => reject(error),
@@ -166,6 +182,7 @@ describe('DebounceLink', () => {
         const op2 = makeSimpleOp(
             makeSimpleSequence(makeSimpleResponse('op2')),
             'key1',
+            DEBOUNCE_TIMEOUT
         );
         const s2 = execute(link, op2).subscribe(subscriber);
         jest.runTimersToTime(DEBOUNCE_TIMEOUT - 1);
@@ -178,6 +195,7 @@ describe('DebounceLink', () => {
         const op3 = makeSimpleOp(
             op3sequence,
             'key1',
+            DEBOUNCE_TIMEOUT
         );
         op3.operationName = 'op3';
         const s3 = execute(link, op3).subscribe(subscriber);
@@ -278,6 +296,7 @@ describe('DebounceLink', () => {
         const op2 = makeSimpleOp(
             op2sequence,
             'key1',
+            DEBOUNCE_TIMEOUT
         );
         const s2 = execute(link, op2).subscribe(subscriber);
         jest.runTimersToTime(DEBOUNCE_TIMEOUT + 1);
@@ -311,6 +330,7 @@ describe('DebounceLink', () => {
         const op2 = makeSimpleOp(
             op2sequence,
             'key2',
+            DEBOUNCE_TIMEOUT
         );
         const observedSequence2: ObservableEvent[] = [];
         // Using a different subscriber, just for fun.
@@ -387,6 +407,7 @@ describe('DebounceLink', () => {
         const op2 = makeSimpleOp(
             op2sequence,
             'key1',
+            DEBOUNCE_TIMEOUT
         );
         const observedSequence2: ObservableEvent[] = [];
         // Using a different subscriber, just for fun.
@@ -410,5 +431,57 @@ describe('DebounceLink', () => {
         expect(observedSequence).toEqual(expectedSequence);
 
         s1.unsubscribe();
+    });
+    describe('with variables', () => {
+        let variables;
+        let mergeVariables;
+
+        const createAndQueueOps = (contextKey = 'key1') => {
+            const variableOps = variables.map(v => makeVariableOp(contextKey, v, { mergeVariables }));
+            const subscriber = getTestSubscriber([]);
+            variableOps.forEach(vo => execute(link, vo).subscribe(subscriber));
+        };
+
+        const subject = () => {
+            createAndQueueOps();
+            jest.runTimersToTime(DEBOUNCE_TIMEOUT + 1);
+        };
+
+        beforeEach(() => {
+            variables = [{ a: 5, b: { c: 6 } }, { b: { d: 4 } }, { e: 3 }];
+            mergeVariables = true;
+        });
+        it('merges the operation variables key with the mergeVariables opt set', () => {
+            subject();
+
+            expect(testLink.operations.length).toEqual(1);
+            expect(testLink.operations[0].variables).toEqual(variables.reduce(merge, {}));
+        });
+        it('does not merge the operation variables when the mergeVariables opt is false', () => {
+            mergeVariables = false;
+            subject();
+
+            expect(testLink.operations.length).toEqual(1);
+            expect(testLink.operations[0].variables).toEqual(variables.slice(-1)[0]);
+        });
+        it('merges only variables within an interval', () => {
+            subject();
+
+            variables = [{ d: 5 }];
+            subject();
+
+            expect(testLink.operations.length).toEqual(2);
+            expect(testLink.operations[1].variables).toEqual(variables[0]);
+        });
+        it('merges variables with separate debounce keys separately', () => {
+            createAndQueueOps('key2');
+            const mergedVariables = variables.reduce(merge, {});
+            variables = [{ d: 5 }];
+            subject();
+
+            expect(testLink.operations.length).toEqual(2);
+            expect(testLink.operations[0].variables).toEqual(mergedVariables);
+            expect(testLink.operations[1].variables).toEqual(variables.reduce(merge, {}));
+        });
     });
 });
