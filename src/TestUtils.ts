@@ -48,7 +48,7 @@ export class TestLink extends ApolloLink {
         this.operations = [];
     }
 
-    public request (operation: Operation) {
+    public request(operation: Operation) {
         this.operations.push(operation);
         // TODO(helfer): Throw an error if neither testError nor testResponse is defined
         return new Observable(observer => {
@@ -69,7 +69,7 @@ export class TestSequenceLink extends ApolloLink {
         this.operations = [];
     }
 
-    public request (operation: Operation, forward: NextLink) {
+    public request(operation: Operation, forward: NextLink) {
         if (!operation.getContext().testSequence) {
             return forward(operation);
         }

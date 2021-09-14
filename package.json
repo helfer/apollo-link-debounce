@@ -5,12 +5,16 @@
   "peerDependencies": {
     "@apollo/client": "^3.0.0"
   },
+  "dependencies": {
+    "lodash.merge": "^4.6.2"
+  },
   "devDependencies": {
     "@apollo/client": "^3.0.0",
     "@types/graphql": "^0.13.0",
     "@types/jest": "^23.1.4",
     "@types/node": "^13.13.2",
     "@types/react": "^16.9.34",
+    "@types/lodash.merge": "^4.6.6",
     "codecov": "^3.0.3",
     "graphql": "^15.0.0",
     "nyc": "^11.2.1",
